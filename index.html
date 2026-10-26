@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#263647">
+    <title>Mutsuz Kedi Sensörü</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #263647;
+            color: #f7f2e9;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 24px;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(83, 117, 132, .35), transparent 55%),
+                #263647;
+        }
+
+        .container {
+            width: min(100%, 430px);
+            padding: 30px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 24px;
+            background: #34495e;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, .3);
+            text-align: center;
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            color: #f1b45b;
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(1.45rem, 5vw, 1.8rem);
+        }
+
+        .subtitle {
+            margin: 10px auto 0;
+            color: #c3cfda;
+            font-size: .93rem;
+            line-height: 1.5;
+        }
+
+        .cat-scene {
+            position: relative;
+            display: grid;
+            place-items: center;
+            height: 285px;
+            margin: 12px auto 0;
+        }
+
+        .cat {
+            position: relative;
+            z-index: 1;
+            width: 260px;
+            height: 230px;
+            transform-origin: 50% 90%;
+            transition: transform 1.2s ease;
+            overflow: visible;
+            filter: drop-shadow(0 9px 5px rgba(37, 28, 27, .2));
+        }
+
+        .cat.sleeping {
+            animation: snooze 3.5s ease-in-out infinite;
+        }
+
+        .cat.waking {
+            transform: translateY(-9px) rotate(-3deg);
+        }
+
+        .cat.awake {
+            transform: translateY(-5px);
+        }
+
+        .cat .sleep-eye {
+            opacity: 1;
+            transition: opacity .25s ease;
+        }
+
+        .cat .open-eye {
+            opacity: 0;
+            transform: scaleY(.2);
+            transform-box: fill-box;
+            transform-origin: center;
+            transition: opacity .35s ease, transform .35s ease;
+        }
+
+        .cat.awake .sleep-eye,
+        .cat.waking .sleep-eye {
+            opacity: 0;
+        }
+
+        .cat.awake .open-eye,
+        .cat.waking .open-eye {
+            opacity: 1;
+            transform: scaleY(1);
+        }
+
+        .cat .mouth-awake {
+            opacity: 0;
+            transition: opacity .3s ease;
+        }
+
+        .cat.awake .mouth-awake,
+        .cat.waking .mouth-awake {
+            opacity: 1;
+        }
+
+        .cat.awake .mouth-sleep,
+        .cat.waking .mouth-sleep {
+            opacity: 0;
+        }
+
+        .cat .fur-mark {
+            fill: none;
+            stroke: #c9d4df;
+            stroke-linecap: round;
+            stroke-width: 3;
+            opacity: .8;
+        }
+
+        .cat .whisker {
+            fill: none;
+            stroke: #8999a8;
+            stroke-linecap: round;
+            stroke-width: 1.5;
+            opacity: .8;
+        }
+
+        .bed {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            width: 235px;
+            height: 48px;
+            border: 7px solid #df8746;
+            border-radius: 20px 20px 28px 28px;
+            background: #b9683e;
+            box-shadow: 0 10px 0 rgba(0, 0, 0, .12);
+            transform: translateX(-50%);
+        }
+
+        .zzz {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            color: #d9e4ed;
+            font-size: 1.3rem;
+            font-weight: 700;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity .4s ease, transform .4s ease;
+        }
+
+        .cat.sleeping ~ .zzz {
+            opacity: .8;
+            transform: translateY(0);
+            animation: float 2s ease-in-out infinite;
+        }
+
+        .status {
+            min-height: 28px;
+            margin: 2px 0 18px;
+            color: #d9e4ed;
+            font-weight: 600;
+        }
+
+        .status.noisy {
+            color: #ff8e83;
+        }
+
+        .meter-card {
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, .09);
+            border-radius: 16px;
+            background: rgba(22, 34, 46, .35);
+            text-align: left;
+        }
+
+        .meter-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .meter-label {
+            color: #c3cfda;
+            font-size: .85rem;
+        }
+
+        .meter-value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .meter-value span {
+            color: #c3cfda;
+            font-size: .9rem;
+            font-weight: 500;
+        }
+
+        .meter-track {
+            height: 10px;
+            margin: 13px 0 9px;
+            overflow: hidden;
+            border-radius: 99px;
+            background: #1e2d3a;
+        }
+
+        .meter-fill {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #6bc7a2, #f3c45e 72%, #ed746b);
+            transition: width .12s linear;
+        }
+
+        .threshold {
+            position: relative;
+            height: 18px;
+            color: #aebdca;
+            font-size: .75rem;
+        }
+
+        .threshold::before {
+            position: absolute;
+            top: -31px;
+            left: 60%;
+            height: 10px;
+            border-left: 2px solid #fff;
+            content: "";
+        }
+
+        .threshold span {
+            position: absolute;
+            left: 60%;
+            transform: translateX(-50%);
+        }
+
+        button {
+            width: 100%;
+            min-height: 48px;
+            margin-top: 16px;
+            border: 0;
+            border-radius: 12px;
+            background: #f0a84f;
+            color: #263647;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .2s ease, transform .2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: #ffc16b;
+            transform: translateY(-1px);
+        }
+
+        button:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 3px;
+        }
+
+        button:disabled {
+            cursor: wait;
+            opacity: .75;
+        }
+
+        .hint {
+            margin: 14px 2px 0;
+            color: #aebdca;
+            font-size: .75rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        @keyframes snooze {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(3px) rotate(1deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p class="eyebrow">Evdeki en hassas kulak</p>
+        <h1>Mutsuz Kedi Sensörü</h1>
+        <p class="subtitle">Ortam sessizse mışıl mışıl uyur. Gürültü olursa hemen uyanır!</p>
+
+        <section class="cat-scene" aria-label="Kedinin durumu">
+            <svg class="cat sleeping" id="cat" viewBox="0 0 260 230" role="img" aria-label="Yatağında huzurla uyuyan pofuduk beyaz kedi">
+                <defs>
+                    <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#ffffff"/>
+                        <stop offset=".52" stop-color="#f5f7fa"/>
+                        <stop offset="1" stop-color="#dce4ed"/>
+                    </linearGradient>
+                    <linearGradient id="faceFur" x1=".15" y1="0" x2=".85" y2="1">
+                        <stop offset="0" stop-color="#ffffff"/>
+                        <stop offset="1" stop-color="#e9eef4"/>
+                    </linearGradient>
+                    <radialGradient id="muzzle" cx=".5" cy=".35" r=".8">
+                        <stop offset="0" stop-color="#ffffff"/>
+                        <stop offset="1" stop-color="#e8edf2"/>
+                    </radialGradient>
+                </defs>
+
+                <path d="M181 164 C211 150 243 166 235 192 C229 214 198 216 187 199 C178 185 191 171 207 176"
+                    fill="none" stroke="#d7e0e9" stroke-width="20" stroke-linecap="round"/>
+                <path d="M181 164 C211 150 243 166 235 192 C229 214 198 216 187 199 C178 185 191 171 207 176"
+                    fill="none" stroke="url(#fur)" stroke-width="14" stroke-linecap="round"/>
+                <circle cx="61" cy="160" r="24" fill="url(#fur)"/>
+                <circle cx="72" cy="183" r="25" fill="url(#fur)"/>
+                <circle cx="95" cy="197" r="24" fill="url(#fur)"/>
+                <circle cx="124" cy="203" r="25" fill="url(#fur)"/>
+                <circle cx="153" cy="199" r="26" fill="url(#fur)"/>
+                <circle cx="178" cy="184" r="24" fill="url(#fur)"/>
+                <circle cx="193" cy="163" r="22" fill="url(#fur)"/>
+                <ellipse cx="132" cy="158" rx="83" ry="54" fill="url(#fur)"/>
+                <ellipse cx="107" cy="169" rx="43" ry="34" fill="#fff" opacity=".88"/>
+                <path d="M133 130 C161 136 176 150 180 169 C162 187 129 196 96 183 C115 172 128 155 133 130Z"
+                    fill="#ffffff" opacity=".95"/>
+
+                <path class="fur-mark" d="M70 146 Q78 157 71 169"/>
+                <path class="fur-mark" d="M84 127 Q95 138 91 148"/>
+                <path class="fur-mark" d="M189 145 Q181 156 187 167"/>
+                <path class="fur-mark" d="M174 128 Q163 139 168 149"/>
+
+                <path d="M85 79 L76 27 Q75 20 82 25 L119 53Z" fill="#e8eef4"/>
+                <path d="M87 68 L82 39 L104 56Z" fill="#e7a2ad"/>
+                <path d="M151 53 L187 25 Q194 20 193 29 L183 80Z" fill="#e8eef4"/>
+                <path d="M164 56 L187 39 L180 68Z" fill="#e7a2ad"/>
+                <circle cx="91" cy="75" r="17" fill="url(#faceFur)"/>
+                <circle cx="173" cy="75" r="17" fill="url(#faceFur)"/>
+                <ellipse cx="132" cy="91" rx="58" ry="52" fill="url(#faceFur)"/>
+
+                <path class="fur-mark" d="M120 48 Q132 59 126 71"/>
+                <path class="fur-mark" d="M133 43 Q143 56 138 69"/>
+                <path class="fur-mark" d="M146 49 Q153 61 148 70"/>
+                <path class="fur-mark" d="M82 88 Q94 91 101 100"/>
+                <path class="fur-mark" d="M181 88 Q170 91 163 100"/>
+
+                <path class="sleep-eye" d="M94 91 Q105 101 116 91" fill="none" stroke="#513a31" stroke-width="3.5" stroke-linecap="round"/>
+                <path class="sleep-eye" d="M148 91 Q159 101 170 91" fill="none" stroke="#513a31" stroke-width="3.5" stroke-linecap="round"/>
+                <ellipse class="open-eye" cx="105" cy="91" rx="9" ry="12" fill="#56a9e8"/>
+                <ellipse class="open-eye" cx="159" cy="91" rx="9" ry="12" fill="#56a9e8"/>
+                <ellipse class="open-eye" cx="106" cy="92" rx="3.5" ry="8" fill="#24394c"/>
+                <ellipse class="open-eye" cx="160" cy="92" rx="3.5" ry="8" fill="#24394c"/>
+                <circle class="open-eye" cx="104" cy="87" r="2" fill="#fff"/>
+                <circle class="open-eye" cx="158" cy="87" r="2" fill="#fff"/>
+
+                <ellipse cx="116" cy="111" rx="18" ry="12" fill="url(#muzzle)"/>
+                <ellipse cx="148" cy="111" rx="18" ry="12" fill="url(#muzzle)"/>
+                <path d="M127 104 Q132 100 137 104 Q136 111 132 112 Q128 110 127 104Z" fill="#bd7476"/>
+                <path class="mouth-sleep" d="M132 112 Q128 119 121 116 M132 112 Q136 119 143 116"
+                    fill="none" stroke="#654139" stroke-width="2" stroke-linecap="round"/>
+                <path class="mouth-awake" d="M123 116 Q132 128 141 116 Q139 130 132 130 Q125 129 123 116Z" fill="#75443e"/>
+                <path class="mouth-awake" d="M128 122 Q132 120 136 122 L134 126 Q132 128 130 126Z" fill="#db8585"/>
+
+                <path class="whisker" d="M108 111 Q91 106 78 102 M107 116 Q89 116 75 120 M109 120 Q94 127 83 133"/>
+                <path class="whisker" d="M156 111 Q173 106 186 102 M157 116 Q175 116 189 120 M155 120 Q170 127 181 133"/>
+
+                <ellipse cx="105" cy="192" rx="31" ry="17" fill="#f8fafc"/>
+                <ellipse cx="158" cy="192" rx="31" ry="17" fill="#f8fafc"/>
+                <path d="M92 192 V198 M102 191 V199 M112 192 V198 M145 192 V198 M155 191 V199 M165 192 V198"
+                    stroke="#c7aeb1" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="zzz" id="zzz" aria-hidden="true">Zzz</span>
+            <div class="bed" aria-hidden="true"></div>
+        </section>
+
+        <p class="status" id="status" aria-live="polite">Kedi mutlu, tatlı tatlı uyuyor 😺</p>
+
+        <section class="meter-card" aria-label="Ortam ses düzeyi">
+            <div class="meter-heading">
+                <span class="meter-label">Ortam ses seviyesi</span>
+                <strong class="meter-value" id="level">— <span>dB*</span></strong>
+            </div>
+            <div
+                class="meter-track"
+                id="meter"
+                role="meter"
+                aria-label="Tahmini ses seviyesi"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0">
+                <div class="meter-fill" id="meterFill"></div>
+            </div>
+            <div class="threshold"><span>Uyanma eşiği: 60 dB</span></div>
+            <button id="toggleButton" type="button">🎙️ Mikrofonu başlat</button>
+            <p class="hint">*Tarayıcı mikrofonu gerçek dB SPL ölçemez; bu değer yaklaşık bir göstergedir. Ölçüm cihaz ve mikrofon hassasiyetine göre değişir. Mikrofon ses kaydetmez veya göndermez.</p>
+        </section>
+    </main>
+
+    <script>
+        (() => {
+            const threshold = 60;
+            const cat = document.getElementById("cat");
+            const status = document.getElementById("status");
+            const levelDisplay = document.getElementById("level");
+            const meter = document.getElementById("meter");
+            const meterFill = document.getElementById("meterFill");
+            const toggleButton = document.getElementById("toggleButton");
+            const zzz = document.getElementById("zzz");
+            let audioContext;
+            let analyser;
+            let microphone;
+            let animationFrame;
+            let quietTimer;
+            let speechTimer;
+            let isNoisy = false;
+            let isRunning = false;
+
+            function setCatState(state) {
+                cat.classList.remove("sleeping", "waking", "awake");
+                cat.classList.add(state);
+                zzz.hidden = state !== "sleeping";
+            }
+
+            function speakWarning() {
+                if (!("speechSynthesis" in window) || speechSynthesis.speaking) {
+                    return;
+                }
+                const warning = new SpeechSynthesisUtterance("Gürültü var!");
+                warning.lang = "tr-TR";
+                warning.rate = 1.15;
+                warning.pitch = 1.35;
+                speechSynthesis.speak(warning);
+            }
+
+            function wakeCat() {
+                if (isNoisy) {
+                    return;
+                }
+                isNoisy = true;
+                window.clearTimeout(quietTimer);
+                setCatState("awake");
+                status.textContent = "Gürültü var! Kedi uyandı ve mutsuz 😾";
+                status.classList.add("noisy");
+                speakWarning();
+                speechTimer = window.setInterval(speakWarning, 3500);
+            }
+
+            function calmCat() {
+                if (!isNoisy) {
+                    return;
+                }
+                isNoisy = false;
+                window.clearInterval(speechTimer);
+                if ("speechSynthesis" in window) {
+                    speechSynthesis.cancel();
+                }
+                setCatState("waking");
+                status.textContent = "Ortalık sakinleşiyor... Kedi yeniden uykuya dalıyor 💤";
+                status.classList.remove("noisy");
+                quietTimer = window.setTimeout(() => {
+                    if (!isNoisy && isRunning) {
+                        setCatState("sleeping");
+                        status.textContent = "Kedi mutlu, tatlı tatlı uyuyor 😺";
+                    }
+                }, 1800);
+            }
+
+            function updateMeter() {
+                if (!isRunning || !analyser) {
+                    return;
+                }
+
+                const samples = new Uint8Array(analyser.fftSize);
+                analyser.getByteTimeDomainData(samples);
+                let sum = 0;
+                for (const sample of samples) {
+                    const normalized = (sample - 128) / 128;
+                    sum += normalized * normalized;
+                }
+                const rms = Math.sqrt(sum / samples.length);
+                const estimatedDb = Math.max(0, Math.min(100, Math.round(20 * Math.log10(rms || 0.00001) + 100)));
+                const percent = estimatedDb;
+
+                levelDisplay.innerHTML = `${estimatedDb} <span>dB*</span>`;
+                meterFill.style.width = `${percent}%`;
+                meter.setAttribute("aria-valuenow", String(estimatedDb));
+
+                if (estimatedDb > threshold) {
+                    wakeCat();
+                } else if (isNoisy) {
+                    calmCat();
+                }
+
+                animationFrame = window.requestAnimationFrame(updateMeter);
+            }
+
+            async function startMicrophone() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Tarayıcınız mikrofon erişimini desteklemiyor. Güncel bir tarayıcı kullanın.");
+                }
+
+                microphone = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    }
+                });
+                const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextConstructor) {
+                    microphone.getTracks().forEach(track => track.stop());
+                    microphone = null;
+                    throw new Error("Tarayıcınız ses analizini desteklemiyor.");
+                }
+
+                audioContext = new AudioContextConstructor();
+                await audioContext.resume();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                audioContext.createMediaStreamSource(microphone).connect(analyser);
+                isRunning = true;
+                toggleButton.textContent = "⏹️ Mikrofonu durdur";
+                status.textContent = "Dinliyorum... Şimdilik her şey sakin 🐾";
+                updateMeter();
+            }
+
+            async function stopMicrophone() {
+                isRunning = false;
+                window.cancelAnimationFrame(animationFrame);
+                window.clearTimeout(quietTimer);
+                window.clearInterval(speechTimer);
+                if ("speechSynthesis" in window) {
+                    speechSynthesis.cancel();
+                }
+                if (microphone) {
+                    microphone.getTracks().forEach(track => track.stop());
+                    microphone = null;
+                }
+                if (audioContext) {
+                    await audioContext.close();
+                    audioContext = null;
+                }
+                analyser = null;
+                isNoisy = false;
+                setCatState("sleeping");
+                status.textContent = "Kedi mutlu, tatlı tatlı uyuyor 😺";
+                status.classList.remove("noisy");
+                levelDisplay.innerHTML = "— <span>dB*</span>";
+                meterFill.style.width = "0";
+                meter.setAttribute("aria-valuenow", "0");
+                toggleButton.textContent = "🎙️ Mikrofonu başlat";
+            }
+
+            toggleButton.addEventListener("click", async () => {
+                toggleButton.disabled = true;
+                try {
+                    if (isRunning) {
+                        await stopMicrophone();
+                    } else {
+                        await startMicrophone();
+                    }
+                } catch (error) {
+                    if (microphone) {
+                        microphone.getTracks().forEach(track => track.stop());
+                        microphone = null;
+                    }
+                    if (audioContext) {
+                        await audioContext.close();
+                        audioContext = null;
+                    }
+                    const message = error.name === "NotAllowedError"
+                        ? "Mikrofon izni verilmedi. Tarayıcı ayarlarından izin verip tekrar deneyin."
+                        : error.name === "NotFoundError"
+                            ? "Kullanılabilir bir mikrofon bulunamadı."
+                            : error.message || "Mikrofon başlatılamadı.";
+                    status.textContent = message;
+                    status.classList.add("noisy");
+                } finally {
+                    toggleButton.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
